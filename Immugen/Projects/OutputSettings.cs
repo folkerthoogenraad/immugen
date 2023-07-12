@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace Immugen.Projects
 {
-    public partial record Project(ProjectSettings Settings, Definition[] Definitions)
+    public class OutputSettings
     {
-        
+        public string Language { get; set; } = "ts";
     }
 }

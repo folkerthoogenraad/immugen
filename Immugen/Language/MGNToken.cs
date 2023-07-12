@@ -11,6 +11,7 @@ namespace Immugen.Language
         KeywordNamespace,
         KeywordClass,
         KeywordExtends,
+        KeywordElement,
 
         Whitespace,
 

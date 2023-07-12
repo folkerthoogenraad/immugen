@@ -10,6 +10,6 @@ namespace Immugen.Projects
     {
         public string InputFolder { get; set; } = "gen";
         public string OutputFolder { get; set; } = "src";
-        public bool OverwriteExisting { get; set; } = true;
+        public OutputSettings OutputSettings { get; set; } = new OutputSettings();
     }
 }

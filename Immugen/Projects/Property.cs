@@ -6,14 +6,27 @@ using System.Threading.Tasks;
 
 namespace Immugen.Projects
 {
-    public record Property(string Name, PropertyType Type)
+    public record Property(string Name, string? NameElement, PropertyType Type)
     {
-        private string? _nameSingular = null;
+        private string? _nameElement = null;
         private string? _namePascal = null;
-        private string? _namePascalSingular = null;
-        public string NameSingular => _nameSingular ??= CreateSingularName(Name);
+        private string? _nameElementPascal = null;
         public string NamePascalCase => _namePascal ??= CreatePascalCase(Name);
-        public string NameSingularPascalCase => _namePascalSingular ??= CreatePascalCase(NameSingular);
+
+        public string GetElementName()
+        {
+            if (NameElement != null)
+            {
+                return NameElement;
+            }
+
+            return _nameElement ??= CreateSingularName(Name);
+        }
+
+        public string GetElementNamePascalCase()
+        {
+            return _nameElementPascal ??= CreatePascalCase(GetElementName());
+        }
 
         private static string CreateSingularName(string input)
         {

@@ -121,48 +121,169 @@ namespace Immugen.Converters
             writer.WriteLine();
 
             // ============================================ //
-            // Write setters
+            // Write setters and functions
             // ============================================ //
             foreach (var property in definition.Properties)
             {
-                writer.WriteLine($"set{property.NamePascalCase}({NameAndType(property)}) : {definition.Name} {{");
-                writer.IncreaseIndentations();
+                WriteSetter(writer, definition, property);
 
-                writer.WriteLine($"return new {definition.Name}(");
-                writer.IncreaseIndentations();
-
-                for(int i = 0; i < definition.Properties.Length; i++)
+                if (!property.Type.IsArray)
                 {
-                    // Self!
-                    if (definition.Properties[i] == property)
-                    {
-                        writer.Write(property.Name);
-                    }
-                    else
-                    {
-                        writer.Write("this.");
-                        writer.Write(definition.Properties[i].Name);
-                    }
-
-                    if (i != definition.Properties.Length - 1)
-                    {
-                        writer.Write(",");
-                    }
-                    writer.WriteLine();
+                    continue;
                 }
 
-                writer.DecreaseIndentations();
-                writer.WriteLine($");");
-
-                writer.DecreaseIndentations();
-                writer.WriteLine("}");
-
+                WriteArrayAdd(writer, definition, property);
+                WriteArrayInsert(writer, definition, property);
+                WriteArrayRemove(writer, definition, property);
+                WriteArrayRemoveAt(writer, definition, property);
+                WriteArrayReplace(writer, definition, property);
+                WriteArrayReplaceAt(writer, definition, property);
             }
 
             writer.DecreaseIndentations();
             writer.WriteLine("}");
 
             return writer.ToString();
+        }
+
+        private void WriteSetter(TSWriter writer, Definition definition, Property property)
+        {
+            writer.WriteLine($"set{property.NamePascalCase}({NameAndType(property)}) : {definition.Name} {{");
+            writer.IncreaseIndentations();
+
+            writer.WriteLine($"return new {definition.Name}(");
+            writer.IncreaseIndentations();
+
+            for (int i = 0; i < definition.Properties.Length; i++)
+            {
+                // Self!
+                if (definition.Properties[i] == property)
+                {
+                    writer.Write(property.Name);
+                }
+                else
+                {
+                    writer.Write("this.");
+                    writer.Write(definition.Properties[i].Name);
+                }
+
+                if (i != definition.Properties.Length - 1)
+                {
+                    writer.Write(",");
+                }
+                writer.WriteLine();
+            }
+
+            writer.DecreaseIndentations();
+            writer.WriteLine($");");
+
+            writer.DecreaseIndentations();
+            writer.WriteLine("}");
+        }
+
+        private void WriteArrayAdd(TSWriter writer, Definition definition, Property property)
+        {
+            writer.WriteLine($"add{property.GetElementNamePascalCase()}({NameAndType(property.GetElementName(), property.Type.ElementType)}) : {definition.Name} {{");
+            writer.IncreaseIndentations();
+
+            writer.WriteLine($"let {property.Name} = [...this.{property.Name}, {property.GetElementName()}];");
+
+            writer.WriteLine($"return set{property.NamePascalCase}({property.Name});");
+
+            writer.DecreaseIndentations();
+            writer.WriteLine("}");
+        }
+
+        private void WriteArrayRemove(TSWriter writer, Definition definition, Property property)
+        {
+            writer.WriteLine($"remove{property.GetElementNamePascalCase()}({NameAndType(property.GetElementName(), property.Type.ElementType)}) : {definition.Name} {{");
+            writer.IncreaseIndentations();
+            
+            writer.WriteLine($"let index = this.{property.Name}.indexOf({property.GetElementName()});");
+            writer.WriteLine();
+            writer.WriteLine($"if (index < 0) return this;");
+            writer.WriteLine();
+
+            writer.WriteLine($"let {property.Name} = [...this.{property.Name}.Slice(0, index), ...this.{property.Name}.Slice(index + 1)];");
+
+            writer.WriteLine($"return set{property.NamePascalCase}({property.Name});");
+
+            writer.DecreaseIndentations();
+            writer.WriteLine("}");
+        }
+
+        private void WriteArrayRemoveAt(TSWriter writer, Definition definition, Property property)
+        {
+            writer.WriteLine($"remove{property.GetElementNamePascalCase()}At(index: number) : {definition.Name} {{");
+            writer.IncreaseIndentations();
+
+            writer.WriteLine($"if (index < 0) return this;");
+            writer.WriteLine($"if (index >= this.{property.Name}.length) return this;");
+            writer.WriteLine();
+
+            writer.WriteLine($"let {property.Name} = [...this.{property.Name}.Slice(0, index), ...this.{property.Name}.Slice(index + 1)];");
+
+            writer.WriteLine($"return set{property.NamePascalCase}({property.Name});");
+
+            writer.DecreaseIndentations();
+            writer.WriteLine("}");
+        }
+
+        private void WriteArrayInsert(TSWriter writer, Definition definition, Property property)
+        {
+            writer.WriteLine($"insert{property.GetElementNamePascalCase()}({NameAndType(property.GetElementName(), property.Type.ElementType)}) : {definition.Name} {{");
+            writer.IncreaseIndentations();
+
+            writer.WriteLine($"if (index < 0) return this;");
+            writer.WriteLine($"if (index > this.{property.Name}.length) return this;");
+            writer.WriteLine();
+
+            writer.WriteLine($"let {property.Name} = [...this.{property.Name}.Slice(0, index), {property.GetElementName()}, ...this.{property.Name}.Slice(index)];");
+
+            writer.WriteLine($"return set{property.NamePascalCase}({property.Name});");
+
+            writer.DecreaseIndentations();
+            writer.WriteLine("}");
+        }
+
+        private void WriteArrayReplace(TSWriter writer, Definition definition, Property property)
+        {
+            var oldName = "old" + property.GetElementNamePascalCase();
+            var newName = "new" + property.GetElementNamePascalCase();
+
+            writer.WriteLine($"replace{property.GetElementNamePascalCase()}({NameAndType(oldName, property.Type.ElementType)}, {NameAndType(newName, property.Type.ElementType)}) : {definition.Name} {{");
+            writer.IncreaseIndentations();
+
+            writer.WriteLine($"let index = this.{property.Name}.indexOf({oldName});");
+            writer.WriteLine();
+            writer.WriteLine($"if (index < 0) return this;");
+            writer.WriteLine($"if (index >= this.{property.Name}.length) return this;");
+            writer.WriteLine();
+
+            writer.WriteLine($"let {property.Name} = [...this.{property.Name}.Slice(0, index), {newName}, ...this.{property.Name}.Slice(index)];");
+
+            writer.WriteLine($"return set{property.NamePascalCase}({property.Name});");
+
+            writer.DecreaseIndentations();
+            writer.WriteLine("}");
+        }
+
+        private void WriteArrayReplaceAt(TSWriter writer, Definition definition, Property property)
+        {
+            writer.WriteLine($"replace{property.GetElementNamePascalCase()}At({NameAndType(property.GetElementNamePascalCase(), property.Type.ElementType)}, index: number) : {definition.Name} {{");
+            writer.IncreaseIndentations();
+
+            writer.WriteLine($"let index = this.{property.Name}.indexOf({property.GetElementNamePascalCase()});");
+            writer.WriteLine();
+            writer.WriteLine($"if (index < 0) return this;");
+            writer.WriteLine();
+
+            writer.WriteLine($"let {property.Name} = [...this.{property.Name}.Slice(0, index), {property.GetElementName()}, ...this.{property.Name}.Slice(index + 1)];");
+
+            writer.WriteLine($"return set{property.NamePascalCase}({property.Name});");
+
+            writer.DecreaseIndentations();
+            writer.WriteLine("}");
         }
 
         public string NameAndType(Property property)

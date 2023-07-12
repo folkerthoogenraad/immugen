@@ -53,7 +53,16 @@ namespace Immugen.Language
 
                 var type = ParseType();
 
-                return new MGNPropertyCommand(name, type);
+                string? elementName = null;
+
+                if(HasCurrentToken && CurrentToken.Type == MGNTokenType.KeywordElement)
+                {
+                    NextToken();
+
+                    elementName = ExpectAndConsume(MGNTokenType.Identifier);
+                }
+
+                return new MGNPropertyCommand(name, elementName, type);
             }
             else
             {

@@ -56,6 +56,10 @@ namespace Immugen.Language
                 {
                     return new MGNToken(MGNTokenType.KeywordExtends, builder.ToString());
                 }
+                else if (data == "element")
+                {
+                    return new MGNToken(MGNTokenType.KeywordElement, builder.ToString());
+                }
 
                 return new MGNToken(MGNTokenType.Identifier, builder.ToString());
             }
